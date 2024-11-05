@@ -7,6 +7,7 @@ const DoctorSchema = new mongoose.Schema({
     degree: String,
     experience: String,
     password: String, // This should be hashed in the future
+    isDeleted: { type: Boolean, default: false } // Soft delete field
 });
 
 module.exports = mongoose.model('Doctor', DoctorSchema);

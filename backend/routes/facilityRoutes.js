@@ -2,20 +2,20 @@ const express = require('express');
 const router = express.Router();
 const Facility = require('../models/Facility');
 
-// Get all facilities
+// Get all facilities (excluding soft deleted ones)
 router.get('/', async (req, res) => {
     try {
-        const facilities = await Facility.find();
+        const facilities = await Facility.find({ isDeleted: false });
         res.json(facilities);
     } catch (err) {
         res.status(500).json({ message: 'Server Error: Unable to retrieve facilities' });
     }
 });
 
-// Get a specific facility by ID
+// Get a specific facility by ID (only if not soft deleted)
 router.get('/:id', async (req, res) => {
     try {
-        const facility = await Facility.findById(req.params.id);
+        const facility = await Facility.findOne({ _id: req.params.id, isDeleted: false });
         if (!facility) {
             return res.status(404).json({ message: 'Facility not found' });
         }
@@ -25,10 +25,10 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// Get a specific facility by Name
+// Get a specific facility by Name (only if not soft deleted)
 router.get('/name/:name', async (req, res) => {
     try {
-        const facility = await Facility.findOne({ name: req.params.name });
+        const facility = await Facility.findOne({ name: req.params.name, isDeleted: false });
         if (!facility) {
             return res.status(404).json({ message: 'Facility not found' });
         }
@@ -57,7 +57,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Update an existing facility by ID
+// Update an existing facility by ID (only if not soft deleted)
 router.put('/:id', async (req, res) => {
     const { name, rooms } = req.body;
 
@@ -67,14 +67,14 @@ router.put('/:id', async (req, res) => {
     }
 
     try {
-        const updatedFacility = await Facility.findByIdAndUpdate(
-            req.params.id,
+        const updatedFacility = await Facility.findOneAndUpdate(
+            { _id: req.params.id, isDeleted: false },
             { name, rooms },
-            { new: true, runValidators: true } // Options: return the new document after update
+            { new: true, runValidators: true }
         );
         
         if (!updatedFacility) {
-            return res.status(404).json({ message: 'Facility not found' });
+            return res.status(404).json({ message: 'Facility not found or has been deleted' });
         }
 
         res.json(updatedFacility);
@@ -83,7 +83,7 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// Update an existing facility by Name
+// Update an existing facility by Name (only if not soft deleted)
 router.put('/name/:name', async (req, res) => {
     const { name, rooms } = req.body;
 
@@ -94,13 +94,13 @@ router.put('/name/:name', async (req, res) => {
 
     try {
         const updatedFacility = await Facility.findOneAndUpdate(
-            { name: req.params.name },  // Search by facility name
+            { name: req.params.name, isDeleted: false },
             { name, rooms },
-            { new: true, runValidators: true } // Options: return the new document after update
+            { new: true, runValidators: true }
         );
         
         if (!updatedFacility) {
-            return res.status(404).json({ message: 'Facility not found' });
+            return res.status(404).json({ message: 'Facility not found or has been deleted' });
         }
 
         res.json(updatedFacility);
@@ -109,27 +109,39 @@ router.put('/name/:name', async (req, res) => {
     }
 });
 
-// Delete a facility by ID
+// Soft delete a facility by ID
 router.delete('/:id', async (req, res) => {
     try {
-        const deletedFacility = await Facility.findByIdAndDelete(req.params.id);
-        if (!deletedFacility) {
+        const updatedFacility = await Facility.findByIdAndUpdate(
+            req.params.id,
+            { isDeleted: true },
+            { new: true }
+        );
+        
+        if (!updatedFacility) {
             return res.status(404).json({ message: 'Facility not found' });
         }
-        res.json({ message: 'Facility deleted successfully', facility: deletedFacility });
+
+        res.json({ message: 'Facility soft deleted successfully', facility: updatedFacility });
     } catch (err) {
         res.status(500).json({ message: 'Server Error: Unable to delete the facility' });
     }
 });
 
-// Delete a facility by Name
+// Soft delete a facility by Name
 router.delete('/name/:name', async (req, res) => {
     try {
-        const deletedFacility = await Facility.findOneAndDelete({ name: req.params.name });
-        if (!deletedFacility) {
+        const updatedFacility = await Facility.findOneAndUpdate(
+            { name: req.params.name },
+            { isDeleted: true },
+            { new: true }
+        );
+
+        if (!updatedFacility) {
             return res.status(404).json({ message: 'Facility not found' });
         }
-        res.json({ message: 'Facility deleted successfully', facility: deletedFacility });
+
+        res.json({ message: 'Facility soft deleted successfully', facility: updatedFacility });
     } catch (err) {
         res.status(500).json({ message: 'Server Error: Unable to delete the facility' });
     }

@@ -7,8 +7,9 @@ const RoomSchema = new Schema({
 });
 
 const FacilitySchema = new Schema({
-    name: { type: String, required: true, unique: true},
+    name: { type: String, required: true, unique: true },
     rooms: [RoomSchema],
+    isDeleted: { type: Boolean, default: false } // Soft delete flag
 });
 
 module.exports = mongoose.model('Facility', FacilitySchema);
