@@ -21,11 +21,14 @@ mongoose.connect(process.env.MONGO_URI, {
 // Import Routes
 const facilityRoutes = require('./routes/facilityRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
+const specializationRoutes = require('./routes/specializationRoutes'); // Add Specialization routes
 
 // Routes
 app.use('/api/facilities', facilityRoutes);
 app.use('/api/doctors', doctorRoutes);
+app.use('/api/specializations', specializationRoutes); // Use Specialization routes
 
+// Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

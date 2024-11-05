@@ -38,10 +38,9 @@ router.get('/name/:name', async (req, res) => {
     }
 });
 
-// Add a new doctor
+// Add a new doctor (prevent duplicate email)
 router.post('/', async (req, res) => {
     const { name, specialty, email, degree, experience, password } = req.body;
-    const doctor = new Doctor({ name, specialty, email, degree, experience, password });
 
     // Validation
     if (!name || !specialty || !email || !degree || !experience || !password) {
@@ -49,6 +48,13 @@ router.post('/', async (req, res) => {
     }
 
     try {
+        // Check if a doctor with the same email exists and is not soft-deleted
+        const existingDoctor = await Doctor.findOne({ email, isDeleted: false });
+        if (existingDoctor) {
+            return res.status(400).json({ message: 'A doctor with this email already exists' });
+        }
+
+        const doctor = new Doctor({ name, specialty, email, degree, experience, password });
         const savedDoctor = await doctor.save();
         res.status(201).json(savedDoctor);
     } catch (err) {
@@ -66,9 +72,8 @@ router.put('/:id', async (req, res) => {
     }
 
     try {
-        // Find doctor by ID and check if not soft deleted
         const updatedDoctor = await Doctor.findOneAndUpdate(
-            { _id: req.params.id, isDeleted: false }, // Check isDeleted is false
+            { _id: req.params.id, isDeleted: false },
             { name, specialty, email, degree, experience, password },
             { new: true, runValidators: true }
         );
@@ -93,9 +98,8 @@ router.put('/name/:name', async (req, res) => {
     }
 
     try {
-        // Find doctor by name and check if not soft deleted
         const updatedDoctor = await Doctor.findOneAndUpdate(
-            { name: req.params.name, isDeleted: false }, // Check isDeleted is false
+            { name: req.params.name, isDeleted: false },
             { name, specialty, email, degree, experience, password },
             { new: true, runValidators: true }
         );
@@ -113,15 +117,16 @@ router.put('/name/:name', async (req, res) => {
 // Soft delete a doctor by ID
 router.delete('/:id', async (req, res) => {
     try {
-        const deletedDoctor = await Doctor.findByIdAndUpdate(
-            req.params.id,
-            { isDeleted: true },
-            { new: true }
-        );
-        if (!deletedDoctor) {
-            return res.status(404).json({ message: 'Doctor not found' });
+        const doctor = await Doctor.findById(req.params.id);
+        
+        if (!doctor || doctor.isDeleted) {
+            return res.status(404).json({ message: 'Doctor not found or already deleted' });
         }
-        res.json({ message: 'Doctor soft deleted successfully', doctor: deletedDoctor });
+
+        doctor.isDeleted = true;
+        await doctor.save();
+
+        res.json({ message: 'Doctor soft deleted successfully', doctor });
     } catch (err) {
         res.status(500).json({ message: 'Server Error: Unable to delete the doctor' });
     }
@@ -130,15 +135,16 @@ router.delete('/:id', async (req, res) => {
 // Soft delete a doctor by Name
 router.delete('/name/:name', async (req, res) => {
     try {
-        const deletedDoctor = await Doctor.findOneAndUpdate(
-            { name: req.params.name },
-            { isDeleted: true },
-            { new: true }
-        );
-        if (!deletedDoctor) {
-            return res.status(404).json({ message: 'Doctor not found' });
+        const doctor = await Doctor.findOne({ name: req.params.name });
+
+        if (!doctor || doctor.isDeleted) {
+            return res.status(404).json({ message: 'Doctor not found or already deleted' });
         }
-        res.json({ message: 'Doctor soft deleted successfully', doctor: deletedDoctor });
+
+        doctor.isDeleted = true;
+        await doctor.save();
+
+        res.json({ message: 'Doctor soft deleted successfully', doctor });
     } catch (err) {
         res.status(500).json({ message: 'Server Error: Unable to delete the doctor' });
     }
