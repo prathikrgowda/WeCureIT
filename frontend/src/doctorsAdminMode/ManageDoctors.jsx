@@ -3,23 +3,24 @@ import AddDoctorForm from './AddDoctorForm';
 import DoctorGrid from './DoctorGrid';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
-import Modal from '../components/Modal'; 
+import Modal from '../components/Modal';
 
 function ManageDoctors() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedDoctor, setSelectedDoctor] = useState(null); 
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
+  const [doctorAdded, setDoctorAdded] = useState(false); // New state variable
 
   // Function to open the modal for editing a doctor
   const handleEditDoctor = (doctor) => {
     setSelectedDoctor(doctor);
-    setIsModalOpen(true); 
+    setIsModalOpen(true);
   };
 
   // Function to close the edit modal
   const handleCloseModal = () => {
-    setIsModalOpen(false); 
-    setSelectedDoctor(null); 
+    setIsModalOpen(false);
+    setSelectedDoctor(null);
   };
 
   // Function to save the doctor data
@@ -29,12 +30,13 @@ function ManageDoctors() {
     } else {
       console.log('New Doctor:', doctorData);
     }
-    handleCloseModal(); 
+    setDoctorAdded(!doctorAdded); // Toggle to trigger DoctorGrid update
+    handleCloseModal();
   };
 
   // Show discard changes confirmation
   const handleDiscardChanges = () => {
-    setIsModalOpen(true); 
+    setIsModalOpen(true);
   };
 
   // Confirm discard changes and close both modals
@@ -57,10 +59,10 @@ function ManageDoctors() {
           <div className="flex flex-col gap-2">
             <div className="min-w-[700px] max-w-[1000px]">
               {/* For adding a new doctor */}
-              <AddDoctorForm onSave={handleSaveDoctor} isEditMode={false} /> 
+              <AddDoctorForm onSave={handleSaveDoctor} isEditMode={false} />
             </div>
             <div className="min-w-[900px] max-w-[1200px]">
-              <DoctorGrid onEdit={handleEditDoctor} /> 
+              <DoctorGrid onEdit={handleEditDoctor} doctorAdded={doctorAdded} /> {/* Pass doctorAdded */}
             </div>
           </div>
         </main>
@@ -70,10 +72,10 @@ function ManageDoctors() {
       <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
         {selectedDoctor && (
           <AddDoctorForm
-            doctor={selectedDoctor} 
+            doctor={selectedDoctor}
             onSave={handleSaveDoctor}
-            onCancel={handleCloseModal} 
-            isEditMode={true}  // Correctly passing isEditMode for edit case
+            onCancel={handleCloseModal}
+            isEditMode={true} // Correctly passing isEditMode for edit case
           />
         )}
       </Modal>

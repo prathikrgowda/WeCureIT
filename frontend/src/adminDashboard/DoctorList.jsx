@@ -9,8 +9,8 @@ function DoctorsList() {
     const fetchDoctors = async () => {
       try {
         const response = await axios.get('http://localhost:4000/api/doctors');  // Adjust the path if needed
-        const limitedDoctors = response.data.slice(0, 5); // Get only the first 5 doctors
-        setDoctors(limitedDoctors);
+        //const limitedDoctors = response.data.slice(0, 5); // Get only the first 5 doctors
+        setDoctors(response.data);
       } catch (error) {
         console.error("Error fetching doctors:", error);
       }

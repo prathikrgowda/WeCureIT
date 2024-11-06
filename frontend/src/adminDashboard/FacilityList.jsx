@@ -10,8 +10,8 @@ function FacilitiesList() {
     const fetchFacilities = async () => {
       try {
         const response = await axios.get('http://localhost:4000/api/facilities'); // Replace with your backend route if different
-        const limitedFacilities = response.data.slice(0, 5); // Limit to 5 facilities
-        setFacilities(limitedFacilities);
+        //const limitedFacilities = response.data.slice(0, 5); // Limit to 5 facilities
+        setFacilities(response.data);
       } catch (error) {
         console.error('Error fetching facilities:', error);
       } finally {

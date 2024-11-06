@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
-function AddDoctorForm({ doctor, onSave, onCancel, isEditMode = false }) {
+function AddDoctorForm({ doctor, onSave, onCancel, onDoctorAdded }) {
   const [doctorName, setDoctorName] = useState("");
   const [selectedSpecialties, setSelectedSpecialties] = useState([]);
   const [email, setEmail] = useState("");
@@ -8,102 +9,128 @@ function AddDoctorForm({ doctor, onSave, onCancel, isEditMode = false }) {
   const [password, setPassword] = useState("");
   const [experience, setExperience] = useState("");
   const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
-  const [errors, setErrors] = useState({}); // State to track form errors
-
-  const specialtiesOptions = [
-    "General Physician",
-    "Gynecologist",
-    "Dermatologist",
-    "Pediatrician",
-    "Neurologist",
-    "Gastroenterologist",
-    "Cardiologist",
-  ];
+  const [errors, setErrors] = useState({});
+  const [specialtiesOptions, setSpecialtiesOptions] = useState([]);
 
   useEffect(() => {
+    const fetchSpecialties = async () => {
+      try {
+        const response = await axios.get('http://localhost:4000/api/specializations');
+        setSpecialtiesOptions(response.data);
+      } catch (error) {
+        console.error("Error fetching specializations:", error);
+      }
+    };
+
+    fetchSpecialties();
+
     if (doctor) {
       setDoctorName(doctor.name);
-      setSelectedSpecialties(doctor.specialty || []);  // Load specializations
+      setSelectedSpecialties(doctor.specialty || []);
       setEmail(doctor.email || "");
       setDegree(doctor.degree || "");
-      setPassword(""); // Reset password for security reasons
+      setPassword("");
       setExperience(doctor.experience || "");
     } else {
-      // Reset form if there's no doctor (for adding a new one)
-      setDoctorName("");
-      setSelectedSpecialties([]);
-      setEmail("");
-      setDegree("");
-      setPassword("");
-      setExperience("");
+      resetForm();
     }
   }, [doctor]);
+
+  const resetForm = () => {
+    setDoctorName("");
+    setSelectedSpecialties([]);
+    setEmail("");
+    setDegree("");
+    setPassword("");
+    setExperience("");
+    setErrors({});
+  };
 
   const handleSpecialtyChange = (event) => {
     const selectedValue = event.target.value;
     if (!selectedSpecialties.includes(selectedValue)) {
-      const updatedSpecialties = [...selectedSpecialties, selectedValue];
-      setSelectedSpecialties(updatedSpecialties);
+      setSelectedSpecialties([...selectedSpecialties, selectedValue]);
     }
-    event.target.value = ""; // Reset the dropdown after selecting
+    event.target.value = "";
   };
 
   const removeSpecialty = (specialty) => {
-    const updatedSpecialties = selectedSpecialties.filter((item) => item !== specialty);
-    setSelectedSpecialties(updatedSpecialties);
+    setSelectedSpecialties(selectedSpecialties.filter((item) => item !== specialty));
   };
 
-  const handleSave = () => {
-    // Validate the form before saving
+  const handleSave = async () => {
     const validationErrors = {};
-    
     if (!doctorName) validationErrors.doctorName = "Doctor's name is required";
     if (selectedSpecialties.length === 0) validationErrors.specialties = "At least one specialty is required";
     if (!email) validationErrors.email = "Email is required";
     if (!degree) validationErrors.degree = "Degree is required";
-    if (!password && !isEditMode) validationErrors.password = "Password is required"; // Password validation only in Add mode
+    if (!password && !doctor) validationErrors.password = "Password is required";
     if (!experience) validationErrors.experience = "Experience is required";
 
     if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors); // Set errors if any validation fails
-      return; // Prevent save action if validation fails
+      setErrors(validationErrors);
+      return;
     }
 
-    // If no validation errors, proceed to save
     const doctorData = {
       name: doctorName,
       specialty: selectedSpecialties,
       email,
       degree,
-      password: isEditMode && !password ? undefined : password, // If it's edit mode and password is empty, don't update password
+      password: doctor ? undefined : password, // Only save password if creating new
       experience,
     };
-    onSave(doctorData); // Trigger the save action
+
+    try {
+      if (doctor) {
+        // Update existing doctor
+        await axios.put(`http://localhost:4000/api/doctors/${doctor._id}`, doctorData);
+      } else {
+        // Add new doctor
+        await axios.post('http://localhost:4000/api/doctors', doctorData);
+        resetForm();
+        if (onDoctorAdded) onDoctorAdded(); // Call to refresh doctor grid after addition
+      }
+      onSave(doctorData); // Close modal and refresh doctor grid
+    } catch (error) {
+      console.error("Error saving doctor:", error);
+    }
   };
 
+
   const handleDiscardChanges = () => {
-    setIsDiscardModalOpen(true); // Open discard confirmation modal
+    setIsDiscardModalOpen(true);
   };
 
   const handleCloseDiscardModal = () => {
-    setIsDiscardModalOpen(false); // Close discard modal
+    setIsDiscardModalOpen(false);
   };
 
-  const handleConfirmDiscard = () => {
-    handleCloseDiscardModal();  // Close the discard modal
-
-    if (onCancel) {
-      onCancel();  // If onCancel is provided, call it to close the main modal as well
+  const handleConfirmDiscard = async () => {
+    handleCloseDiscardModal();
+    if (doctor) {
+      try {
+        const response = await axios.get(`http://localhost:4000/api/doctors/${doctor._id}`);
+        const { name, specialty, email, degree, experience } = response.data;
+        setDoctorName(name);
+        setSelectedSpecialties(specialty);
+        setEmail(email);
+        setDegree(degree);
+        setExperience(experience);
+        setPassword("");
+      } catch (error) {
+        console.error("Error fetching doctor data:", error);
+      }
+    } else {
+      resetForm();
     }
+    onCancel();
   };
 
   return (
     <>
       <section className="flex flex-col bg-white border rounded-lg p-8 w-full">
-        {/* Doctor form */}
-        <form className="grid grid-cols-1 gap-4 mb-6">  {/* Changed to single column layout */}
-          
-          {/* Doctor's Name - Full Width */}
+        <form className="grid grid-cols-1 gap-4 mb-6">
           <div>
             <label className="block mb-2">Doctor's Name</label>
             <input
@@ -116,15 +143,11 @@ function AddDoctorForm({ doctor, onSave, onCancel, isEditMode = false }) {
             {errors.doctorName && <p className="text-red-500 text-sm mt-1">{errors.doctorName}</p>}
           </div>
 
-          {/* Specialties - Full Width */}
           <div>
             <label className="block mb-2">Specialties</label>
             <div className="flex flex-wrap gap-2 mb-2">
               {selectedSpecialties.map((specialty, index) => (
-                <div
-                  key={index}
-                  className="flex items-center bg-indigo-100 text-indigo-700 p-2 rounded-full"
-                >
+                <div key={index} className="flex items-center bg-indigo-100 text-indigo-700 p-2 rounded-full">
                   <span>{specialty}</span>
                   <button
                     type="button"
@@ -143,16 +166,15 @@ function AddDoctorForm({ doctor, onSave, onCancel, isEditMode = false }) {
             >
               <option value="" disabled>Select Specialization</option>
               {specialtiesOptions.map((specialty, index) => (
-                <option key={index} value={specialty}>
-                  {specialty}
+                <option key={index} value={specialty.name}>
+                  {specialty.name}
                 </option>
               ))}
             </select>
             {errors.specialties && <p className="text-red-500 text-sm mt-1">{errors.specialties}</p>}
           </div>
 
-          {/* Email */}
-          <div className="grid grid-cols-2 gap-4">  {/* Back to 2-column layout for the remaining fields */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block mb-2">Doctor's Email</label>
               <input
@@ -165,7 +187,6 @@ function AddDoctorForm({ doctor, onSave, onCancel, isEditMode = false }) {
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
 
-            {/* Degree */}
             <div>
               <label className="block mb-2">Degree</label>
               <input
@@ -178,7 +199,6 @@ function AddDoctorForm({ doctor, onSave, onCancel, isEditMode = false }) {
               {errors.degree && <p className="text-red-500 text-sm mt-1">{errors.degree}</p>}
             </div>
 
-            {/* Password */}
             <div>
               <label className="block mb-2">{doctor ? 'Change Password' : 'Set Password'}</label>
               <input
@@ -191,7 +211,6 @@ function AddDoctorForm({ doctor, onSave, onCancel, isEditMode = false }) {
               {!doctor && errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
             </div>
 
-            {/* Experience */}
             <div>
               <label className="block mb-2">Experience</label>
               <input
@@ -206,7 +225,6 @@ function AddDoctorForm({ doctor, onSave, onCancel, isEditMode = false }) {
           </div>
         </form>
         
-        {/* Buttons */}
         <div className="flex gap-3">
           <button
             type="button"
@@ -215,7 +233,6 @@ function AddDoctorForm({ doctor, onSave, onCancel, isEditMode = false }) {
           >
             {doctor ? 'Save Changes' : 'Add Doctor'}
           </button>
-          {/* Discard Changes Button */}
           {doctor && (
             <button
               type="button"
@@ -228,7 +245,6 @@ function AddDoctorForm({ doctor, onSave, onCancel, isEditMode = false }) {
         </div>
       </section>
 
-      {/* Discard Confirmation Modal */}
       {isDiscardModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded-md shadow-lg">

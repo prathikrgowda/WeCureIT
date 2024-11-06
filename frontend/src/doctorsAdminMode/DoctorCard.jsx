@@ -1,48 +1,40 @@
 import React, { useState } from 'react';
-import Modal from '../components/Modal'; // Assuming you have a reusable Modal component
 
-function DoctorCard({ name, specialty, onEdit }) {
-  const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false); // State to control the remove confirmation modal
+function DoctorCard({ doctor, onEdit, onRemove }) {
+  const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
 
-  const handleRemoveClick = () => {
-    setIsRemoveModalOpen(true); // Open the confirmation modal
-  };
-
-  const handleCloseRemoveModal = () => {
-    setIsRemoveModalOpen(false); // Close the confirmation modal
-  };
+  const handleRemoveClick = () => setIsRemoveModalOpen(true);
+  const handleCloseRemoveModal = () => setIsRemoveModalOpen(false);
 
   const handleConfirmRemove = () => {
-    console.log(`Removing doctor: ${name}`);
-    setIsRemoveModalOpen(false); // Close the modal after confirming removal
-    // Add logic here to actually remove the doctor if necessary
+    onRemove(doctor._id);
+    handleCloseRemoveModal();
   };
 
   return (
     <div className="bg-white border rounded-lg p-4 text-center">
-      <h3 className="text-lg font-medium">{name}</h3>
-      <p className="text-gray-500">{specialty}</p>
+      <h3 className="text-lg font-medium">{doctor.name}</h3>
+      <p className="text-gray-500">{doctor.specialty.join(', ')}</p>
       <div className="flex justify-center gap-2 mt-4">
         <button
           className="px-4 py-1 bg-red-500 hover:bg-red-800 text-white rounded-full"
-          onClick={handleRemoveClick} // Open confirmation modal
+          onClick={handleRemoveClick}
         >
           Remove
         </button>
         <button
           className="px-4 py-1 bg-gray-300 hover:bg-gray-500 text-gray-800 rounded-full"
-          onClick={onEdit} // Trigger the edit functionality
+          onClick={onEdit}
         >
           Edit
         </button>
       </div>
 
-      {/* Modal for confirming doctor removal */}
       {isRemoveModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded-md shadow-lg">
             <p className="text-lg mb-4">
-              Are you sure you want to remove <strong>{name}</strong>?
+              Are you sure you want to remove <strong>{doctor.name}</strong>?
             </p>
             <div className="flex justify-end gap-2">
               <button

@@ -1,99 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import DoctorCard from './DoctorCard';
 import AddDoctorForm from './AddDoctorForm';
-import Modal from '../components/Modal'; // Assuming you have a Modal component
+import Modal from '../components/Modal';
 
-function DoctorGrid() {
+function DoctorGrid({ doctorAdded }) { // Accept doctorAdded prop
+  const [doctors, setDoctors] = useState([]);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Sample doctors data with updated structure to support multiple specialties
-  const doctors = [
-    {
-      name: 'Dr. Richard James',
-      specialty: ['General Physician', 'Cardiologist','Dermatologist'],  // Multiple specialties
-      email: 'richard@example.com',
-      degree: 'MD',
-      experience: '10 years',
-    },
-    {
-      name: 'Dr. Emily Larson',
-      specialty: ['Gynecologist'],  // Single specialty
-      email: 'emily.larson@hospital.com',
-      degree: 'MD',
-      experience: '8 years',
-    },
-    {
-      name: 'Dr. Sarah Patel',
-      specialty: ['Dermatologist'],
-      email: 'sarah.patel@hospital.com',
-      degree: 'MD, Dermatology',
-      experience: '5 years',
-    },
-    {
-      name: 'Dr. Christopher Lee',
-      specialty: ['Pediatrician'],
-      email: 'christopher.lee@hospital.com',
-      degree: 'MBBS, Pediatrics',
-      experience: '12 years',
-    },
-    {
-      name: 'Dr. Jennifer Garcia',
-      specialty: ['Neurologist'],
-      email: 'jennifer.garcia@hospital.com',
-      degree: 'MD, Neurology',
-      experience: '6 years',
-    },
-    {
-      name: 'Dr. Andrew Williams',
-      specialty: ['Gastroenterologist'],
-      email: 'andrew.williams@hospital.com',
-      degree: 'MD, Gastroenterology',
-      experience: '7 years',
-    },
-    {
-      name: 'Dr. Jeffrey King',
-      specialty: ['Pediatrician'],
-      email: 'jeffrey.king@hospital.com',
-      degree: 'MBBS, Pediatrics',
-      experience: '9 years',
-    },
-    {
-      name: 'Dr. Zoe Kelly',
-      specialty: ['Neurologist', 'Psychiatrist'],  // Multiple specialties
-      email: 'zoe.kelly@hospital.com',
-      degree: 'MD, Neurology',
-      experience: '11 years',
-    },
-    {
-      name: 'Dr. Patrick Harris',
-      specialty: ['Gastroenterologist'],
-      email: 'patrick.harris@hospital.com',
-      degree: 'MD, Gastroenterology',
-      experience: '4 years',
-    },
-    {
-      name: 'Dr. Chloe Evans',
-      specialty: ['General Physician', 'Dermatologist'],  // Multiple specialties
-      email: 'chloe.evans@hospital.com',
-      degree: 'MBBS',
-      experience: '6 years',
-    },
-    {
-      name: 'Dr. Ryan Martinez',
-      specialty: ['Gynecologist'],
-      email: 'ryan.martinez@hospital.com',
-      degree: 'MD, Gynecology',
-      experience: '8 years',
-    },
-    {
-      name: 'Dr. Amelia Hill',
-      specialty: ['Dermatologist'],
-      email: 'amelia.hill@hospital.com',
-      degree: 'MD, Dermatology',
-      experience: '5 years',
-    },
-  ];
+  // Function to fetch doctors from the backend
+  const fetchDoctors = async () => {
+    try {
+      const response = await axios.get('http://localhost:4000/api/doctors');
+      setDoctors(response.data);
+    } catch (error) {
+      console.error("Error fetching doctors:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchDoctors();
+  }, [doctorAdded]); // Re-fetch when doctorAdded changes
 
   const handleEdit = (doctor) => {
     setSelectedDoctor(doctor);
@@ -105,32 +33,54 @@ function DoctorGrid() {
     setSelectedDoctor(null);
   };
 
-  const handleSaveDoctor = (updatedDoctor) => {
-    console.log('Updated doctor:', updatedDoctor);
-    // Update the doctor in your list here (in a real app, you would update the state)
-    setIsModalOpen(false);
+  const handleSaveDoctor = async (doctorData) => {
+    try {
+      if (selectedDoctor) {
+        // Update existing doctor
+        await axios.put(`http://localhost:4000/api/doctors/${selectedDoctor._id}`, doctorData);
+      } else {
+        // Add new doctor
+        await axios.post('http://localhost:4000/api/doctors', doctorData);
+      }
+      fetchDoctors(); // Refresh the list of doctors immediately
+    } catch (error) {
+      console.error("Error saving doctor:", error);
+    } finally {
+      handleCloseModal();
+    }
+  };
+
+  const handleRemoveDoctor = async (doctorId) => {
+    try {
+      await axios.delete(`http://localhost:4000/api/doctors/${doctorId}`);
+      fetchDoctors(); // Refresh the list of doctors after deletion
+    } catch (error) {
+      console.error("Error removing doctor:", error);
+    }
   };
 
   return (
     <section className="mt-8">
       <h3 className="text-xl font-medium mb-6">All Doctors</h3>
       <div className="grid grid-cols-4 gap-6">
-        {doctors.map((doctor, index) => (
+        {doctors.map((doctor) => (
           <DoctorCard
-            key={index}
-            name={doctor.name}
-            specialty={doctor.specialty.join(', ')}  // Display specialties as a comma-separated string
-            email={doctor.email}
-            degree={doctor.degree}
-            experience={doctor.experience}
-            onEdit={() => handleEdit(doctor)} // Pass the doctor details to the edit function
+            key={doctor._id}
+            doctor={doctor}
+            onEdit={() => handleEdit(doctor)}
+            onRemove={() => handleRemoveDoctor(doctor._id)}
           />
         ))}
       </div>
 
       {isModalOpen && (
         <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
-          <AddDoctorForm doctor={selectedDoctor} onSave={handleSaveDoctor} />
+          <AddDoctorForm
+            doctor={selectedDoctor}
+            onSave={handleSaveDoctor}
+            onCancel={handleCloseModal}
+            onDoctorAdded={fetchDoctors} // Call fetchDoctors after adding a new doctor
+          />
         </Modal>
       )}
     </section>
