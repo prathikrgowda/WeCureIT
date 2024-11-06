@@ -47,20 +47,21 @@ function AddFacilityForm({ facility, onCancel }) {
 
   const validateForm = () => {
     let formErrors = {};
+
+    // Validate facility name
     if (!facilityName.trim()) {
       formErrors.facilityName = "Facility name is required.";
     }
+
+    // Ensure at least one room is added
     if (rooms.length === 0) {
       formErrors.rooms = "At least one room must be added.";
-    } else {
-      rooms.forEach((room, index) => {
-        if (room.specializations.length === 0) {
-          formErrors[`room_${room.id}`] = `Room must have at least one specialization.`;
-        }
-      });
     }
+
+    // No need to validate specializations for each room, as the backend handles defaults
     return formErrors;
-  };
+};
+
 
   const handleSave = () => {
     const formErrors = validateForm();
