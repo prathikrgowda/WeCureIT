@@ -194,4 +194,15 @@ router.delete('/name/:name', async (req, res) => {
     }
 });
 
+// Get the count of facilities (excluding soft-deleted ones)
+router.get('/count', async (req, res) => {
+    try {
+        const count = await Facility.countDocuments({ isDeleted: false });
+        res.json({ count });
+    } catch (err) {
+        res.status(500).json({ message: 'Server Error: Unable to retrieve facility count', error: err.message });
+    }
+});
+
+
 module.exports = router;

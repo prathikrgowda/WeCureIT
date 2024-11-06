@@ -12,6 +12,15 @@ router.get('/', async (req, res) => {
     }
 });
 
+router.get('/count', async (req, res) => {
+    try {
+        const count = await Doctor.countDocuments({ isDeleted: false });
+        res.json({ count });
+    } catch (err) {
+        res.status(500).json({ message: 'Server Error: Unable to retrieve the doctor count' });
+    }
+});
+
 // Get a specific doctor by ID (excluding soft-deleted ones)
 router.get('/:id', async (req, res) => {
     try {

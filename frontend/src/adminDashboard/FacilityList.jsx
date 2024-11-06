@@ -1,14 +1,30 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 function FacilitiesList() {
-  // Each facility has a name only
-  const facilities = [
-    { name: "Facility 1" },
-    { name: "Facility 2" },
-    { name: "Facility 3" },
-    { name: "Facility 4" },
-    { name: "Facility 5" }
-  ];
+  const [facilities, setFacilities] = useState([]); // State to store facilities
+  const [loading, setLoading] = useState(true); // State to manage loading
+
+  useEffect(() => {
+    // Function to fetch facilities from the backend
+    const fetchFacilities = async () => {
+      try {
+        const response = await axios.get('http://localhost:4000/api/facilities'); // Replace with your backend route if different
+        const limitedFacilities = response.data.slice(0, 5); // Limit to 5 facilities
+        setFacilities(limitedFacilities);
+      } catch (error) {
+        console.error('Error fetching facilities:', error);
+      } finally {
+        setLoading(false); // End loading state
+      }
+    };
+
+    fetchFacilities();
+  }, []);
+
+  if (loading) {
+    return <p>Loading facilities...</p>; // Show loading text while fetching
+  }
 
   return (
     <section className="flex flex-col mt-0 bg-white border rounded-lg p-4 w-[500px]">
