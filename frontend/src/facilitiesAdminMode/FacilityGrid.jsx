@@ -1,63 +1,29 @@
-import React, { useState } from 'react';
+// FacilityGrid.js
+import React, { useState, useEffect } from 'react';
 import AddFacilityForm from './AddFacilityForm';
 import Modal from '../components/Modal';
+import axios from 'axios';
 
-const facilities = [
-    {
-      id: 1,
-      name: "Downtown Health Clinic",
-      rooms: [
-        { id: 1, specializations: ["General Physician", "Cardiologist"] },
-        { id: 2, specializations: ["Pediatrician", "Dermatologist"] },
-      ]
-    },
-    {
-      id: 2,
-      name: "Northside Wellness Center",
-      rooms: [
-        { id: 1, specializations: ["Cardiologist"] },
-        { id: 2, specializations: ["Dermatologist", "Gynecologist"] },
-      ]
-    },
-    {
-      id: 3,
-      name: "West End Pediatrics",
-      rooms: [
-        { id: 1, specializations: ["Pediatrician"] },
-      ]
-    },
-    {
-      id: 4,
-      name: "Eastside Medical Complex",
-      rooms: [
-        { id: 1, specializations: ["Orthopedic Surgeon"] },
-        { id: 2, specializations: ["Neurologist"] },
-        { id: 3, specializations: ["General Physician"] },
-      ]
-    },
-    {
-      id: 5,
-      name: "Central City Hospital",
-      rooms: [
-        { id: 1, specializations: ["Surgeon", "Anesthesiologist"] },
-        { id: 2, specializations: ["Cardiologist", "Pulmonologist"] },
-      ]
-    },
-    {
-      id: 6,
-      name: "Green Valley Clinic",
-      rooms: [
-        { id: 1, specializations: ["Dentist"] },
-        { id: 2, specializations: ["Dermatologist"] },
-      ]
+function FacilityGrid({ refresh }) {
+  const [facilities, setFacilities] = useState([]);
+  const [selectedFacility, setSelectedFacility] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
+  const [facilityToRemove, setFacilityToRemove] = useState(null);
+
+  // Fetch facilities from the backend
+  const fetchFacilities = async () => {
+    try {
+      const response = await axios.get('http://localhost:4000/api/facilities');
+      setFacilities(response.data);
+    } catch (error) {
+      console.error("Error fetching facilities:", error);
     }
-  ];
+  };
 
-function FacilityGrid() {
-  const [selectedFacility, setSelectedFacility] = useState(null); // Store the selected facility data
-  const [isModalOpen, setIsModalOpen] = useState(false); // Control modal open/close state
-  const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false); // Control the remove confirmation modal
-  const [facilityToRemove, setFacilityToRemove] = useState(null); // Store facility to remove
+  useEffect(() => {
+    fetchFacilities(); // Fetch facilities on component mount and when 'refresh' changes
+  }, [refresh]);
 
   const handleEdit = (facility) => {
     setSelectedFacility(facility); // Set the selected facility for editing
@@ -69,6 +35,11 @@ function FacilityGrid() {
     setSelectedFacility(null); // Clear selected facility
   };
 
+  const handleSaveSuccess = () => {
+    handleCloseModal();
+    fetchFacilities(); // Refetch the facilities to reflect changes
+  };
+
   // Handle remove facility button click
   const handleRemoveClick = (facility) => {
     setFacilityToRemove(facility); // Set the facility to remove
@@ -76,11 +47,17 @@ function FacilityGrid() {
   };
 
   // Confirm removal of the facility
-  const handleConfirmRemove = () => {
+  const handleConfirmRemove = async () => {
     console.log(`Removing facility: ${facilityToRemove.name}`);
-    // Add logic to actually remove the facility if needed...
-    setIsRemoveModalOpen(false); // Close the confirmation modal
-    setFacilityToRemove(null); // Clear the facility to remove
+    try {
+      await axios.delete(`http://localhost:4000/api/facilities/${facilityToRemove._id}`);
+      console.log("Facility removed successfully");
+      setIsRemoveModalOpen(false); // Close the confirmation modal
+      setFacilityToRemove(null); // Clear the facility to remove
+      fetchFacilities(); // Refresh the list of facilities
+    } catch (error) {
+      console.error("Error removing facility:", error);
+    }
   };
 
   // Close the remove confirmation modal
@@ -95,7 +72,7 @@ function FacilityGrid() {
         <h3 className="text-lg font-medium text-gray-900 mb-4">All Facilities</h3>
         <ul className="divide-y divide-gray-200">
           {facilities.map((facility) => (
-            <li key={facility.id} className="flex justify-between items-center py-3">
+            <li key={facility._id} className="flex justify-between items-center py-3">
               <span className="text-sm font-medium text-gray-900">{facility.name}</span>
               <div className="flex gap-2">
                 <button
@@ -118,7 +95,11 @@ function FacilityGrid() {
 
       {/* Modal for editing the facility */}
       <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
-        <AddFacilityForm facility={selectedFacility} /> {/* Pass the selected facility to pre-fill the form */}
+        <AddFacilityForm
+          facility={selectedFacility}
+          onCancel={handleCloseModal}
+          onSaveSuccess={handleSaveSuccess}
+        />
       </Modal>
 
       {/* Modal for confirming facility removal */}

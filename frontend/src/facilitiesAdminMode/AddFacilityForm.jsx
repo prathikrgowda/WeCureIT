@@ -1,7 +1,9 @@
+// AddFacilityForm.js
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import AddRoom from './AddRoom';  // Import the AddRoom component
 
-function AddFacilityForm({ facility, onCancel }) {  
+function AddFacilityForm({ facility, onCancel, onSaveSuccess }) {  
   const [rooms, setRooms] = useState([]);
   const [facilityName, setFacilityName] = useState("");
   const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
@@ -11,7 +13,12 @@ function AddFacilityForm({ facility, onCancel }) {
   useEffect(() => {
     if (facility) {
       setFacilityName(facility.name);
-      setRooms(facility.rooms || []);
+      setRooms(
+        facility.rooms.map((room, index) => ({
+          ...room,
+          id: index + 1, // Assign a unique id for each room
+        }))
+      );
       setRoomIdCounter(facility.rooms.length + 1); // Initialize counter based on number of rooms
     }
   }, [facility]);
@@ -58,17 +65,50 @@ function AddFacilityForm({ facility, onCancel }) {
       formErrors.rooms = "At least one room must be added.";
     }
 
-    // No need to validate specializations for each room, as the backend handles defaults
+    // Removed specialization validation
+    // rooms.forEach((room) => {
+    //   if (room.specializations.length === 0) {
+    //     formErrors[`room_${room.id}`] = "At least one specialization is required for each room.";
+    //   }
+    // });
+
     return formErrors;
-};
+  };
 
-
-  const handleSave = () => {
+  const handleSave = async () => {
     const formErrors = validateForm();
 
     if (Object.keys(formErrors).length === 0) {
-      console.log("Saving facility:", { facilityName, rooms });
-      // Handle actual save here...
+      const facilityData = {
+        name: facilityName,
+        rooms,
+      };
+
+      try {
+        if (facility && facility._id) {
+          // Editing existing facility
+          await axios.put(`http://localhost:4000/api/facilities/${facility._id}`, facilityData);
+          console.log("Facility updated successfully:", facilityData);
+        } else {
+          // Adding new facility
+          await axios.post('http://localhost:4000/api/facilities', facilityData);
+          console.log("Facility added successfully:", facilityData);
+        }
+
+        // Reset form after successful save
+        setFacilityName("");
+        setRooms([]);
+        setRoomIdCounter(1);
+
+        // Call the success callback to trigger a refresh
+        if (onSaveSuccess) {
+          onSaveSuccess();
+        } else if (onCancel) {
+          onCancel();
+        }
+      } catch (error) {
+        console.error("Error saving facility:", error);
+      }
     } else {
       setErrors(formErrors);
     }
@@ -101,7 +141,7 @@ function AddFacilityForm({ facility, onCancel }) {
 
         {/* Dynamically rendered rooms */}
         {rooms.map((room, index) => (
-          <div key={room.id}>
+          <div key={room.id} className="mb-4">
             <AddRoom
               room={room}
               onRemoveRoom={removeRoom}

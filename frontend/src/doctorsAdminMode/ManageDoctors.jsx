@@ -35,9 +35,9 @@ function ManageDoctors() {
   };
 
   // Show discard changes confirmation
-  const handleDiscardChanges = () => {
-    setIsModalOpen(true);
-  };
+  //const handleDiscardChanges = () => {
+  //  setIsModalOpen(true);
+  //};
 
   // Confirm discard changes and close both modals
   const handleConfirmDiscard = () => {
