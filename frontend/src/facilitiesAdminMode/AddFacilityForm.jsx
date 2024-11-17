@@ -1,4 +1,3 @@
-// AddFacilityForm.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import AddRoom from './AddRoom';  // Import the AddRoom component
@@ -66,11 +65,11 @@ function AddFacilityForm({ facility, onCancel, onSaveSuccess }) {
     }
 
     // Removed specialization validation
-    // rooms.forEach((room) => {
-    //   if (room.specializations.length === 0) {
-    //     formErrors[`room_${room.id}`] = "At least one specialization is required for each room.";
-    //   }
-    // });
+// rooms.forEach((room) => {
+// if (room.specializations.length === 0) {
+// formErrors[`room_${room.id}`] = "At least one specialization is required for each room.";
+// }
+// });
 
     return formErrors;
   };
@@ -88,11 +87,9 @@ function AddFacilityForm({ facility, onCancel, onSaveSuccess }) {
         if (facility && facility._id) {
           // Editing existing facility
           await axios.put(`http://localhost:4000/api/facilities/${facility._id}`, facilityData);
-          console.log("Facility updated successfully:", facilityData);
         } else {
           // Adding new facility
           await axios.post('http://localhost:4000/api/facilities', facilityData);
-          console.log("Facility added successfully:", facilityData);
         }
 
         // Reset form after successful save
@@ -107,7 +104,12 @@ function AddFacilityForm({ facility, onCancel, onSaveSuccess }) {
           onCancel();
         }
       } catch (error) {
-        console.error("Error saving facility:", error);
+        if (error.response && error.response.data.message) {
+          // Handle backend error and display message
+          setErrors({ facilityName: error.response.data.message });
+        } else {
+          console.error("Error saving facility:", error);
+        }
       }
     } else {
       setErrors(formErrors);
@@ -124,10 +126,11 @@ function AddFacilityForm({ facility, onCancel, onSaveSuccess }) {
             id="facility-name"
             name="facility-name"
             type="text"
-            className="w-full p-2 border rounded-md"
+            className={`w-full p-2 border rounded-md ${errors.facilityName ? 'border-red-500' : ''}`}
             placeholder="Name"
             value={facilityName}
             onChange={(e) => setFacilityName(e.target.value)}
+            disabled={!!facility} // Disable field in edit mode
           />
           {errors.facilityName && (
             <p className="text-red-500 text-sm mt-1">{errors.facilityName}</p>
