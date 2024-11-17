@@ -93,10 +93,13 @@ function AddDoctorForm({ doctor, onSave, onCancel, onDoctorAdded }) {
       }
       onSave(doctorData); // Close modal and refresh doctor grid
     } catch (error) {
-      console.error("Error saving doctor:", error);
+      if (error.response && error.response.data.errors) {
+        setErrors(error.response.data.errors); // Map backend errors to frontend
+      } else {
+        console.error("Error saving doctor:", error);
+      }
     }
   };
-
 
   const handleDiscardChanges = () => {
     setIsDiscardModalOpen(true);
@@ -139,6 +142,7 @@ function AddDoctorForm({ doctor, onSave, onCancel, onDoctorAdded }) {
               placeholder="Name"
               value={doctorName}
               onChange={(e) => setDoctorName(e.target.value)}
+              disabled={!!doctor} // Disable field in edit mode
             />
             {errors.doctorName && <p className="text-red-500 text-sm mt-1">{errors.doctorName}</p>}
           </div>
@@ -183,6 +187,7 @@ function AddDoctorForm({ doctor, onSave, onCancel, onDoctorAdded }) {
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={!!doctor} // Disable field in edit mode
               />
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
@@ -212,11 +217,11 @@ function AddDoctorForm({ doctor, onSave, onCancel, onDoctorAdded }) {
             </div>
 
             <div>
-              <label className="block mb-2">Experience</label>
+              <label className="block mb-2">Experience (in years)</label>
               <input
                 type="text"
                 className={`w-full p-2 border rounded-md ${errors.experience ? 'border-red-500' : ''}`}
-                placeholder="Experience (e.g., 5 years)"
+                placeholder="Experience (e.g., 5)"
                 value={experience}
                 onChange={(e) => setExperience(e.target.value)}
               />

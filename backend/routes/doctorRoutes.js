@@ -51,36 +51,78 @@ router.get('/name/:name', async (req, res) => {
 router.post('/', async (req, res) => {
     const { name, specialty, email, degree, experience, password } = req.body;
 
+    const errors = {};
+
     // Validation
-    if (!name || !specialty || !email || !degree || !experience || !password) {
-        return res.status(400).json({ message: 'All fields are required' });
+    if (!name) errors.name = "Doctor's name is required";
+    if (!specialty || specialty.length === 0) errors.specialty = "At least one specialty is required";
+    if (!email) {
+        errors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.email = "Invalid email format";
+    }
+    if (!degree) errors.degree = "Degree is required";
+    if (!experience) {
+        errors.experience = "Experience is required";
+    } else if (!/^\d+$/.test(experience)) {
+        errors.experience = "Experience must be a number";
+    }
+    if (!password) errors.password = "Password is required";
+
+    if (Object.keys(errors).length > 0) {
+        return res.status(400).json({ errors });
     }
 
     try {
         // Check if a doctor with the same email exists and is not soft-deleted
         const existingDoctor = await Doctor.findOne({ email, isDeleted: false });
         if (existingDoctor) {
-            return res.status(400).json({ message: 'A doctor with this email already exists' });
+            return res.status(400).json({ errors: { email: "A doctor with this email already exists" } });
         }
 
         const doctor = new Doctor({ name, specialty, email, degree, experience, password });
         const savedDoctor = await doctor.save();
         res.status(201).json(savedDoctor);
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        res.status(500).json({ message: "An error occurred while saving the doctor", error: err.message });
     }
 });
+
+module.exports = router;
+
 
 // Update an existing doctor by ID (only if not soft deleted)
 router.put('/:id', async (req, res) => {
     const { name, specialty, email, degree, experience, password } = req.body;
 
+    const errors = {};
+
     // Validation
-    if (!name || !specialty || !email || !degree || !experience) {
-        return res.status(400).json({ message: 'All fields except password are required' });
+    if (!name) errors.name = "Doctor's name is required";
+    if (!specialty || specialty.length === 0) errors.specialty = "At least one specialty is required";
+    if (!email) {
+        errors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.email = "Invalid email format";
+    }
+    if (!degree) errors.degree = "Degree is required";
+    if (!experience) {
+        errors.experience = "Experience is required";
+    } else if (!/^\d+$/.test(experience)) {
+        errors.experience = "Experience must be a number";
+    }
+
+    if (Object.keys(errors).length > 0) {
+        return res.status(400).json({ errors });
     }
 
     try {
+        // Check for unique email if email is being updated
+        const existingDoctorWithEmail = await Doctor.findOne({ email, _id: { $ne: req.params.id }, isDeleted: false });
+        if (existingDoctorWithEmail) {
+            return res.status(400).json({ errors: { email: "A doctor with this email already exists" } });
+        }
+
         const updatedDoctor = await Doctor.findOneAndUpdate(
             { _id: req.params.id, isDeleted: false },
             { name, specialty, email, degree, experience, password },
@@ -101,12 +143,34 @@ router.put('/:id', async (req, res) => {
 router.put('/name/:name', async (req, res) => {
     const { name, specialty, email, degree, experience, password } = req.body;
 
+    const errors = {};
+
     // Validation
-    if (!name || !specialty || !email || !degree || !experience) {
-        return res.status(400).json({ message: 'All fields except password are required' });
+    if (!name) errors.name = "Doctor's name is required";
+    if (!specialty || specialty.length === 0) errors.specialty = "At least one specialty is required";
+    if (!email) {
+        errors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.email = "Invalid email format";
+    }
+    if (!degree) errors.degree = "Degree is required";
+    if (!experience) {
+        errors.experience = "Experience is required";
+    } else if (!/^\d+$/.test(experience)) {
+        errors.experience = "Experience must be a number";
+    }
+
+    if (Object.keys(errors).length > 0) {
+        return res.status(400).json({ errors });
     }
 
     try {
+        // Check for unique email if email is being updated
+        const existingDoctorWithEmail = await Doctor.findOne({ email, name: { $ne: req.params.name }, isDeleted: false });
+        if (existingDoctorWithEmail) {
+            return res.status(400).json({ errors: { email: "A doctor with this email already exists" } });
+        }
+
         const updatedDoctor = await Doctor.findOneAndUpdate(
             { name: req.params.name, isDeleted: false },
             { name, specialty, email, degree, experience, password },
