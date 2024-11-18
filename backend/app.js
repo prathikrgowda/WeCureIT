@@ -22,11 +22,13 @@ mongoose.connect(process.env.MONGO_URI, {
 const facilityRoutes = require('./routes/facilityRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
 const specializationRoutes = require('./routes/specializationRoutes'); // Add Specialization routes
+const adminLoginRoutes = require('./routes/adminLoginRoutes'); // Add Admin Login routes
 
 // Routes
 app.use('/api/facilities', facilityRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/specializations', specializationRoutes); // Use Specialization routes
+app.use('/api/admin', adminLoginRoutes); // Use Admin Login routes
 
 // Start the server
 app.listen(PORT, () => {
