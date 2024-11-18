@@ -1,18 +1,35 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios'; // Import axios for API calls
 
 function AdminLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [user_id, setUserId] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState(''); // State to hold error messages
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Add your authentication logic here
-    if (email && password) {
-      navigate('/Dashboard'); // Redirect to Dashboard
-    } else {
-      alert('Please enter email and password');
+
+    try {
+      // Call the authentication API
+      const response = await axios.post('http://localhost:4000/api/admin/authenticate', {
+        user_id,
+        password,
+      });
+
+      // If authentication is successful, navigate to the dashboard
+      if (response.status === 200) {
+        setError(''); // Clear error state
+        navigate('/Dashboard'); // Redirect to Dashboard
+      }
+    } catch (error) {
+      // Handle authentication failure
+      if (error.response && error.response.data && error.response.data.error) {
+        setError(error.response.data.error); // Set the error message from backend
+      } else {
+        setError('Server error. Please try again later.');
+      }
     }
   };
 
@@ -23,9 +40,9 @@ function AdminLogin() {
         <div className="flex items-center justify-between">
           {/* Left Section: Logo and Admin Badge */}
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl text-indigo-800">WeCureIT</h1>
+          <h1 className="text-2xl text-indigo-800">WeCureIt</h1>
             <span className="px-3 py-1 text-xs font-thin leading-4 text-gray-600 rounded-full border border-gray-500">
-              Admin
+            Admin
             </span>
           </div>
 
@@ -60,19 +77,19 @@ function AdminLogin() {
             <span className="text-indigo-800 font-bold">Admin</span> Login
           </h2>
           <form onSubmit={handleLogin}>
-            {/* Email Field */}
+            {/* User ID Field */}
             <div className="mb-4">
-              <label htmlFor="email" className="block text-sm text-gray-700 mb-2">
-                Email
+              <label htmlFor="user_id" className="block text-sm text-gray-700 mb-2">
+                User ID
               </label>
               <input
-                type="email"
-                id="email"
-                name="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                id="user_id"
+                name="user_id"
+                value={user_id}
+                onChange={(e) => setUserId(e.target.value)}
                 className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring focus:ring-indigo-300"
-                placeholder="Enter your email"
+                placeholder="Enter your user ID"
               />
             </div>
             {/* Password Field */}
@@ -90,6 +107,12 @@ function AdminLogin() {
                 placeholder="Enter your password"
               />
             </div>
+            {/* Display Error Message */}
+            {error && (
+              <div className="mb-4 text-sm text-red-600 text-center">
+                {error}
+              </div>
+            )}
             {/* Login Button */}
             <button
               type="submit"
