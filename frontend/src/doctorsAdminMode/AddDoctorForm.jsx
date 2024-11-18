@@ -77,7 +77,7 @@ function AddDoctorForm({ doctor, onSave, onCancel, onDoctorAdded }) {
       specialty: selectedSpecialties,
       email,
       degree,
-      password: doctor ? undefined : password, // Only save password if creating new
+      password: doctor ? undefined : password, // Send plaintext password for new doctors
       experience,
     };
 

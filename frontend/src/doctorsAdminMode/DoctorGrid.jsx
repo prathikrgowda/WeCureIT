@@ -4,7 +4,7 @@ import DoctorCard from './DoctorCard';
 import AddDoctorForm from './AddDoctorForm';
 import Modal from '../components/Modal';
 
-function DoctorGrid({ doctorAdded }) { // Accept doctorAdded prop
+function DoctorGrid({ doctorAdded }) {
   const [doctors, setDoctors] = useState([]);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -13,7 +13,7 @@ function DoctorGrid({ doctorAdded }) { // Accept doctorAdded prop
   const fetchDoctors = async () => {
     try {
       const response = await axios.get('http://localhost:4000/api/doctors');
-      setDoctors(response.data);
+      setDoctors(response.data); // Directly set doctors from backend
     } catch (error) {
       console.error("Error fetching doctors:", error);
     }

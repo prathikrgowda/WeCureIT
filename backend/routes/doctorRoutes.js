@@ -1,23 +1,62 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const Doctor = require('../models/Doctor');
 
-// Get all doctors (excluding soft-deleted ones)
+const secretKey = process.env.SECRET_KEY; // Secure key from environment variables
+
+// Validate SECRET_KEY
+if (!secretKey || Buffer.from(secretKey, 'hex').length !== 32) {
+    throw new Error('Invalid SECRET_KEY. Ensure it is a 32-byte (64-character hex) string.');
+}
+
+// Helper functions for encryption and decryption
+const encryptPassword = (password) => {
+    const key = Buffer.from(secretKey, 'hex'); // Convert secret key to Buffer
+    const iv = crypto.randomBytes(16); // Generate a random initialization vector
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv); // Use the key as Buffer
+    const encrypted = Buffer.concat([cipher.update(password, 'utf8'), cipher.final()]);
+    const authTag = cipher.getAuthTag();
+    return {
+        iv: iv.toString('hex'),
+        content: encrypted.toString('hex'),
+        tag: authTag.toString('hex'),
+    };
+};
+
+const decryptPassword = (encryptedData) => {
+    const key = Buffer.from(secretKey, 'hex'); // Convert secret key to Buffer
+    const { iv, content, tag } = encryptedData;
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(iv, 'hex'));
+    decipher.setAuthTag(Buffer.from(tag, 'hex'));
+    const decrypted = Buffer.concat([decipher.update(Buffer.from(content, 'hex')), decipher.final()]);
+    return decrypted.toString('utf8');
+};
+
+// Get all doctors (with password decryption)
 router.get('/', async (req, res) => {
     try {
         const doctors = await Doctor.find({ isDeleted: false });
-        res.json(doctors);
+        const decryptedDoctors = doctors.map((doctor) => {
+            const doctorData = doctor.toObject();
+            if (doctorData.password) {
+                doctorData.password = decryptPassword(doctorData.password);
+            }
+            return doctorData;
+        });
+        res.json(decryptedDoctors);
     } catch (err) {
         res.status(500).json({ message: 'Server Error: Unable to retrieve doctors' });
     }
 });
 
+// Get the count of doctors (excluding soft-deleted ones)
 router.get('/count', async (req, res) => {
     try {
         const count = await Doctor.countDocuments({ isDeleted: false });
         res.json({ count });
     } catch (err) {
-        res.status(500).json({ message: 'Server Error: Unable to retrieve the doctor count' });
+        res.status(500).json({ message: 'Server Error: Unable to retrieve facility count', error: err.message });
     }
 });
 
@@ -28,7 +67,14 @@ router.get('/:id', async (req, res) => {
         if (!doctor) {
             return res.status(404).json({ message: 'Doctor not found' });
         }
-        res.json(doctor);
+
+        // Decrypt the password before sending
+        const doctorData = doctor.toObject();
+        if (doctorData.password) {
+            doctorData.password = decryptPassword(doctorData.password);
+        }
+
+        res.json(doctorData);
     } catch (err) {
         res.status(500).json({ message: 'Server Error: Unable to retrieve the doctor' });
     }
@@ -41,19 +87,25 @@ router.get('/name/:name', async (req, res) => {
         if (!doctor) {
             return res.status(404).json({ message: 'Doctor not found' });
         }
-        res.json(doctor);
+
+        // Decrypt the password before sending
+        const doctorData = doctor.toObject();
+        if (doctorData.password) {
+            doctorData.password = decryptPassword(doctorData.password);
+        }
+
+        res.json(doctorData);
     } catch (err) {
         res.status(500).json({ message: 'Server Error: Unable to retrieve the doctor' });
     }
 });
 
-// Add a new doctor (prevent duplicate email)
+// Add a new doctor (with password encryption)
 router.post('/', async (req, res) => {
     const { name, specialty, email, degree, experience, password } = req.body;
 
     const errors = {};
 
-    // Validation
     if (!name) errors.name = "Doctor's name is required";
     if (!specialty || specialty.length === 0) errors.specialty = "At least one specialty is required";
     if (!email) {
@@ -74,13 +126,8 @@ router.post('/', async (req, res) => {
     }
 
     try {
-        // Check if a doctor with the same email exists and is not soft-deleted
-        const existingDoctor = await Doctor.findOne({ email, isDeleted: false });
-        if (existingDoctor) {
-            return res.status(400).json({ errors: { email: "A doctor with this email already exists" } });
-        }
-
-        const doctor = new Doctor({ name, specialty, email, degree, experience, password });
+        const encryptedPassword = encryptPassword(password); // Encrypt password
+        const doctor = new Doctor({ name, specialty, email, degree, experience, password: encryptedPassword });
         const savedDoctor = await doctor.save();
         res.status(201).json(savedDoctor);
     } catch (err) {
@@ -88,16 +135,12 @@ router.post('/', async (req, res) => {
     }
 });
 
-module.exports = router;
-
-
 // Update an existing doctor by ID (only if not soft deleted)
 router.put('/:id', async (req, res) => {
     const { name, specialty, email, degree, experience, password } = req.body;
 
     const errors = {};
 
-    // Validation
     if (!name) errors.name = "Doctor's name is required";
     if (!specialty || specialty.length === 0) errors.specialty = "At least one specialty is required";
     if (!email) {
@@ -117,15 +160,16 @@ router.put('/:id', async (req, res) => {
     }
 
     try {
-        // Check for unique email if email is being updated
-        const existingDoctorWithEmail = await Doctor.findOne({ email, _id: { $ne: req.params.id }, isDeleted: false });
-        if (existingDoctorWithEmail) {
-            return res.status(400).json({ errors: { email: "A doctor with this email already exists" } });
+        const updateData = { name, specialty, email, degree, experience };
+
+        // Encrypt the password if provided
+        if (password) {
+            updateData.password = encryptPassword(password);
         }
 
         const updatedDoctor = await Doctor.findOneAndUpdate(
             { _id: req.params.id, isDeleted: false },
-            { name, specialty, email, degree, experience, password },
+            updateData,
             { new: true, runValidators: true }
         );
 
@@ -145,7 +189,6 @@ router.put('/name/:name', async (req, res) => {
 
     const errors = {};
 
-    // Validation
     if (!name) errors.name = "Doctor's name is required";
     if (!specialty || specialty.length === 0) errors.specialty = "At least one specialty is required";
     if (!email) {
@@ -165,15 +208,16 @@ router.put('/name/:name', async (req, res) => {
     }
 
     try {
-        // Check for unique email if email is being updated
-        const existingDoctorWithEmail = await Doctor.findOne({ email, name: { $ne: req.params.name }, isDeleted: false });
-        if (existingDoctorWithEmail) {
-            return res.status(400).json({ errors: { email: "A doctor with this email already exists" } });
+        const updateData = { name, specialty, email, degree, experience };
+
+        // Encrypt the password if provided
+        if (password) {
+            updateData.password = encryptPassword(password);
         }
 
         const updatedDoctor = await Doctor.findOneAndUpdate(
             { name: req.params.name, isDeleted: false },
-            { name, specialty, email, degree, experience, password },
+            updateData,
             { new: true, runValidators: true }
         );
 

@@ -6,7 +6,11 @@ const DoctorSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     degree: String,
     experience: String,
-    password: String, // This should be hashed in the future
+    password: {
+        iv: { type: String, required: true },
+        content: { type: String, required: true },
+        tag: { type: String, required: true },
+    }, 
     isDeleted: { type: Boolean, default: false } // Soft delete field
 });
 
