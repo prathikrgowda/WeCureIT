@@ -4,6 +4,7 @@ import Dashboard from './adminDashboard/Dashboard'; // Assuming Dashboard.js is 
 import ManageDoctors from './doctorsAdminMode/ManageDoctors'; // The page for managing doctors
 import Sidebar from './components/Sidebar'; // Assuming Sidebar is imported here for layout purposes
 import ManageFacilities from './facilitiesAdminMode/ManageFacilities';
+import AdminLogin from './AdminLogin';
 
 function App() {
   return (
@@ -11,7 +12,8 @@ function App() {
       <div className="flex">
         <main className="flex-1 p-1">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/login" element={<AdminLogin />} />
+            <Route path="/Dashboard" element={<Dashboard />} />
             <Route path="/manage-doctors" element={<ManageDoctors />} />
             <Route path="/manage-facilities" element={<ManageFacilities />} />
           </Routes>

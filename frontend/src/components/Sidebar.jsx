@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 function Sidebar() {
   const location = useLocation();
   const menuItems = [
-    { icon: "https://cdn.builder.io/api/v1/image/assets/TEMP/9d47167c648b08011457fb8422c23ccb0faf5e34a75cfbc99d35d21986eda059?placeholderIfAbsent=true&apiKey=8f0d2cc9bf764b679624a1d309a49f82", label: "Dashboard", path: "/" },
+    { icon: "https://cdn.builder.io/api/v1/image/assets/TEMP/9d47167c648b08011457fb8422c23ccb0faf5e34a75cfbc99d35d21986eda059?placeholderIfAbsent=true&apiKey=8f0d2cc9bf764b679624a1d309a49f82", label: "Dashboard", path: "/Dashboard" },
     { icon: "https://cdn.builder.io/api/v1/image/assets/TEMP/e5cb9e928db17c33dce2e1ad7079e7a4bccbda4a3aa219111a3096dc910c1db3?placeholderIfAbsent=true&apiKey=8f0d2cc9bf764b679624a1d309a49f82", label: "Add/Manage Doctors", path: "/manage-doctors" },
     { icon: "https://cdn.builder.io/api/v1/image/assets/TEMP/ba35dadaadfd93ef4f8883dffa15f20a687819f4a7729e9efaf6400b5c860ce7?placeholderIfAbsent=true&apiKey=8f0d2cc9bf764b679624a1d309a49f82", label: "Add/Manage Facilities", path: "/manage-facilities" }
   ];

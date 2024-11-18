@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Modal from './Modal';  // Assuming you have a Modal component
 
 function Header() {
+  const navigate = useNavigate();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const handleLogoutClick = () => {
@@ -13,7 +15,7 @@ function Header() {
   };
 
   const handleConfirmLogout = () => {
-    console.log('Logging out...');
+    navigate('/Login');
     // Add actual logout logic here, such as redirecting to a login page or clearing session
     setIsLogoutModalOpen(false); // Close the modal after confirming logout
   };
