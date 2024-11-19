@@ -92,11 +92,20 @@ function AddDoctorForm({ doctor, onSave, onCancel, onDoctorAdded }) {
         if (onDoctorAdded) onDoctorAdded(); // Call to refresh doctor grid after addition
       }
       onSave(doctorData); // Close modal and refresh doctor grid
-    } catch (error) {
-      if (error.response && error.response.data.errors) {
-        setErrors(error.response.data.errors); // Map backend errors to frontend
+    } catch (error) { 
+     if (error.response && error.response.data.errors) {
+        if (error.response.data.error && error.response.data.error.includes("duplicate")) {
+          setErrors({ email: "This email is already registered." });
+        } else if (error.response.data.errors) {
+          setErrors(error.response.data.errors); // Map backend errors to frontend
+        }
       } else {
-        console.error("Error saving doctor:", error);
+        if (error.response.data.error && error.response.data.error.includes("duplicate")) {
+          setErrors({ email: "This email is already registered." });
+        }
+        else {
+          console.error("Error saving doctor:", error);
+        }
       }
     }
   };
@@ -186,7 +195,11 @@ function AddDoctorForm({ doctor, onSave, onCancel, onDoctorAdded }) {
                 className={`w-full p-2 border rounded-md ${errors.email ? 'border-red-500' : ''}`}
                 placeholder="Email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setErrors((prev) => ({ ...prev, email:undefined}));
+                }}
+
                 disabled={!!doctor} // Disable field in edit mode
               />
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
