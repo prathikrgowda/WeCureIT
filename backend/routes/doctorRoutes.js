@@ -100,7 +100,6 @@ router.get('/name/:name', async (req, res) => {
     }
 });
 
-// Add a new doctor (with password encryption)
 router.post('/', async (req, res) => {
     const { name, specialty, email, degree, experience, password } = req.body;
 
@@ -126,12 +125,36 @@ router.post('/', async (req, res) => {
     }
 
     try {
-        const encryptedPassword = encryptPassword(password); // Encrypt password
+        // Check if a doctor with the same email already exists
+        const existingDoctor = await Doctor.findOne({ email });
+
+        if (existingDoctor) {
+            if (existingDoctor.isDeleted) {
+                // Reactivate the soft-deleted doctor
+                existingDoctor.isDeleted = false;
+                existingDoctor.name = name;
+                existingDoctor.specialty = specialty;
+                existingDoctor.degree = degree;
+                existingDoctor.experience = experience;
+                existingDoctor.password = encryptPassword(password); // Encrypt new password
+                const reactivatedDoctor = await existingDoctor.save();
+                return res.status(200).json({
+                    message: 'Doctor reactivated successfully',
+                    doctor: reactivatedDoctor,
+                });
+            } else {
+                // If the doctor exists and is not soft-deleted, return an error
+                return res.status(400).json({ message: 'A doctor with this email already exists' });
+            }
+        }
+
+        // Encrypt the password and create a new doctor
+        const encryptedPassword = encryptPassword(password);
         const doctor = new Doctor({ name, specialty, email, degree, experience, password: encryptedPassword });
         const savedDoctor = await doctor.save();
         res.status(201).json(savedDoctor);
     } catch (err) {
-        res.status(500).json({ message: "An error occurred while saving the doctor", error: err.message });
+        res.status(400).json({ message: err.message });
     }
 });
 

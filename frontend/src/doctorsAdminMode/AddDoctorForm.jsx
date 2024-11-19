@@ -92,22 +92,23 @@ function AddDoctorForm({ doctor, onSave, onCancel, onDoctorAdded }) {
         if (onDoctorAdded) onDoctorAdded(); // Call to refresh doctor grid after addition
       }
       onSave(doctorData); // Close modal and refresh doctor grid
-    } catch (error) { 
-     if (error.response && error.response.data.errors) {
-        if (error.response.data.error && error.response.data.error.includes("duplicate")) {
+    } catch (error) {
+      if (error.response && error.response.data) {
+        // Check for specific backend errors
+        if (error.response.data.message && error.response.data.message.includes("email already exists")) {
+          // Set email error message
           setErrors({ email: "This email is already registered." });
         } else if (error.response.data.errors) {
-          setErrors(error.response.data.errors); // Map backend errors to frontend
+          // Map other backend validation errors to the frontend
+          setErrors(error.response.data.errors);
+        } else {
+          console.error("Unexpected error response:", error.response.data);
         }
       } else {
-        if (error.response.data.error && error.response.data.error.includes("duplicate")) {
-          setErrors({ email: "This email is already registered." });
-        }
-        else {
-          console.error("Error saving doctor:", error);
-        }
+        console.error("Error saving doctor:", error);
       }
     }
+    
   };
 
   const handleDiscardChanges = () => {
