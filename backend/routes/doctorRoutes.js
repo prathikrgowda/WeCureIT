@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const Doctor = require('../models/Doctor');
+//const authenticate = require('../middleware/authenticate'); // Import the middleware
 
 const secretKey = process.env.SECRET_KEY; // Secure key from environment variables
 
@@ -100,7 +101,7 @@ router.get('/name/:name', async (req, res) => {
     }
 });
 
-router.post('/', async (req, res) => {
+router.post('/',  async (req, res) => {
     const { name, specialty, email, degree, experience, password } = req.body;
 
     const errors = {};

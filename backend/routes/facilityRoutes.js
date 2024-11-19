@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Facility = require('../models/Facility');
 const Specialization = require('../models/Specialization');
+//const authenticate = require('../middleware/authenticate');
 
 // Helper function to validate and set specializations
 async function validateAndSetSpecializations(rooms) {
@@ -68,7 +69,7 @@ router.get('/name/:name', async (req, res) => {
 });
 
 // Add a new facility or reactivate a soft-deleted one
-router.post('/', async (req, res) => {
+router.post('/',  async (req, res) => {
     const { name, rooms } = req.body;
 
     // Validation

@@ -15,6 +15,7 @@ function Header() {
   };
 
   const handleConfirmLogout = () => {
+    localStorage.removeItem('authToken'); // Clear token
     navigate('/Login');
     // Add actual logout logic here, such as redirecting to a login page or clearing session
     setIsLogoutModalOpen(false); // Close the modal after confirming logout

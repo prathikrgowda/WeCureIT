@@ -20,6 +20,8 @@ function AdminLogin() {
 
       // If authentication is successful, navigate to the dashboard
       if (response.status === 200) {
+        const { token } = response.data; // Extract token from response
+        localStorage.setItem('authToken', token); // Store the token in localStorage
         setError(''); // Clear error state
         navigate('/Dashboard'); // Redirect to Dashboard
       }
