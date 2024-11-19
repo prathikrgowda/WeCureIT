@@ -61,7 +61,7 @@ function AddFacilityForm({ facility, onCancel, onSaveSuccess }) {
 
     // Ensure at least one room is added
     if (rooms.length === 0) {
-      formErrors.rooms = "At least one room must be added.";
+      formErrors.facilityName = "At least one room must be added.";
     }
 
     // Removed specialization validation
